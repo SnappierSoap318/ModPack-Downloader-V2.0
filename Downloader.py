@@ -2,7 +2,7 @@ import shutil
 import json
 import os
 import re
-from tqdm import tqdm
+import base64
 from zipfile import ZipFile
 import faster_than_requests as requests
 import PySimpleGUI as sg
@@ -11,25 +11,27 @@ import PySimpleGUI as sg
 class Minecraft:
     'minecraft class with all the details about modpack and the version info'
 
-    def __init__(self, version, mp_name, folder):
+    def __init__(self, version, mp_name, mp_path):
         self.version = version
         self.mp_name = mp_name
-        self.mp_path = folder + self.mp_name
+        self.mp_path = mp_path
         self.ml_name = modloader()
-        self.ml = self.version + '-' + \
-            self.ml_name.replace("-", self.version + '-').lstrip()
+        self.ml = self.version + '-' + self.ml_name
+        self.img_path = mp_path + '/icon.png'
 
 
-layout = [[sg.Text("Select the .zip file of the modpack"), sg.FileBrowse()],
+layout = [[sg.Text("Select the .zip file of the modpack"), sg.FileBrowse(file_types=(("Zip Files", '.zip'),))],
           [sg.Text("Select the folder to extract modpack into"),
            sg.FolderBrowse()],
           [sg.Button("Next"), sg.Button("Cancel")],
-          [sg.ProgressBar(500, orientation= 'h', visible=False, key='progressbar', style='winnative', size = (40,50))],
-          [sg.Output(size = (50, 20), key = 'output', visible=False)]]
+          [sg.ProgressBar(500, orientation='h', visible=False,
+                          key='progressbar', style='winnative', size=(60, 10))],
+          [sg.Output(size=(70, 30), key='output', visible=False)]]
 
 window = sg.Window("Modpack Installer", layout)
 progress_bar = window['progressbar']
 output = window['output']
+
 
 def mkdir_chdir(path):
     try:
@@ -84,10 +86,8 @@ def mods_install():
 
 
 def modloader():
-    mLNameAll = str(data['minecraft']['modLoaders']).strip(
-        "[{").strip("}]").rsplit(',')
-    mLNameAll = mLNameAll[0].rsplit(':')
-    return mLNameAll[1].replace("'", "")
+    ml = str(data['minecraft']['modLoaders'][0]['id'])
+    return ml
 
 
 def add_overrides(path):
@@ -99,10 +99,13 @@ def add_overrides(path):
             shutil.move(file_path, src_path, copy_function=shutil.copytree)
 
         for name in dirs:
-            dir_path = os.path.join(root, name)
-            src_path = dir_path.replace("\\overrides", "")
-            print(dir_path)
-            shutil.move(dir_path, src_path, copy_function=shutil.copytree)
+            if(name != 'overrides'):
+                dir_path = os.path.join(root, name)
+                src_path = dir_path.replace("\\overrides", "")
+                print(dir_path)
+                shutil.move(dir_path, src_path, copy_function=shutil.copytree)
+            else:
+                pass
     try:
         os.removedirs(os.getcwd() + '\\overrides')
         os.remove(os.getcwd() + 'modlist.html')
@@ -114,16 +117,22 @@ def add_overrides(path):
 def add_profile():
 
     app_data_path = os.getenv("APPDATA")
-    os.chdir(app_data_path+"//.minecraft//")
+    os.chdir(app_data_path+"\\.minecraft\\")
+    v_path = os.getcwd()+'\\versions\\'+minecraft.ml
+    if(os.path.exists(v_path)):
+        try:
+            ram = sg.popup_get_text(
+                "Enter The amount of ram you should allocate:", "")
+        except:
+            sg.popup("You did not specify ram, using default")
+            ram = 2
 
-    if(os.path.exists(os.getcwd()+'\\versions\\'+minecraft.ml)):
-        print("How much ram do you want to allocate?")
-        ram = input()
         with open("launcher_profiles.json", 'r') as prof:
             launcher_data = json.load(prof)
 
         new_profile = {minecraft.mp_name: {
             "name": minecraft.mp_name,
+            "icon": add_profile_img(minecraft.img_path),
             "gameDir": minecraft.mp_path,
             "lastVersionId": minecraft.ml,
             "type": "custom",
@@ -136,6 +145,12 @@ def add_profile():
             json.dump(launcher_data, prof)
     else:
         sg.PopupOK('Forge Is not installed!')
+
+def add_profile_img(img_path):
+    with open(img_path, 'rb') as image:
+        encoded_str = str(base64.b64encode(image.read())).replace("b'","").replace("'","")
+    browser_tag = 'data:image/png;base64,'
+    return browser_tag + encoded_str
 
 ###########################################################################################################################
 #                                   Entry Point for the Program Starts From Here                                          #
@@ -163,16 +178,17 @@ while True:
 
     data = get_data(os.getcwd() + '\\manifest.json')
     # Modloader name parsing
-
-    minecraft = Minecraft(data['minecraft']['version'], data['name'], folder)
+    path = folder + '/' + zipName
+    minecraft = Minecraft(data['minecraft']['version'], data['name'], path)
 
     # Making Directories and Changing the current working directories
     mkdir_chdir('mods')
     mods_install()
-    print(os.getcwd())
-    # add_overrides()
-    if(sg.PopupYesNo("Do you wish to add to profile?")):
+    os.chdir('../')
+    add_overrides(os.getcwd())
+    if(sg.PopupYesNo("Do you wish to add to profile?") == "Yes"):
         add_profile()
+        sg.PopupOK('Downloading Finished & profile has been added to launcher, Have Fun!')
     else:
-        sg.PopupOK('Downloading Finished Have Fun!')
+        sg.PopupOK('Downloading Finished, Have Fun!')
     break
