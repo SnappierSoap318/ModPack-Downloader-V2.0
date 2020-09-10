@@ -26,8 +26,8 @@
   ```
   
 # Running The Code:
-  ##### Hard Way(kind of):
-   just open a command promt or powershell to the directory of the `.py` file and just run `python <file-name>.py` and it should show a GUI and the rest is self explanatory
-  ##### Easy Way: 
-   run the exe file provided in the releases page of this repo and thats it rest is self explanatory
-  
+   1) Install Python and the required dependancies(using pip)
+   2) Clone or download the `.py` file to a folder
+   3) open powershell or command promt to the folder
+   4) type `python Downloader.py`
+   5) Follow the steps in the program to install a modpack
