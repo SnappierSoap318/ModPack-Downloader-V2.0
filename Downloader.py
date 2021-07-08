@@ -76,7 +76,6 @@ def mods_install():
 
         if os.path.exists(os.getcwd() + '\\' + file_name):
             print("Skipping " + file_name + " because File already exists!")
-            pass
         else:
             print("Downloading: " + file_name)
             requests.download(url, file_name)
