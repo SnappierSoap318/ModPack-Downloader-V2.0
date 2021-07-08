@@ -99,7 +99,7 @@ def add_overrides(path):
             shutil.move(file_path, src_path, copy_function=shutil.copytree)
 
         for name in dirs:
-            if(name != 'overrides'):
+            if name != 'overrides':
                 dir_path = os.path.join(root, name)
                 src_path = dir_path.replace("\\overrides", "")
                 print(dir_path)
@@ -119,7 +119,7 @@ def add_profile():
     app_data_path = os.getenv("APPDATA")
     os.chdir(app_data_path+"\\.minecraft\\")
     v_path = os.getcwd()+'\\versions\\'+minecraft.ml
-    if(os.path.exists(v_path)):
+    if os.path.exists(v_path):
         try:
             ram = sg.popup_get_text(
                 "Enter The amount of ram you should allocate:", "")
@@ -186,7 +186,7 @@ while True:
     mods_install()
     os.chdir('../')
     add_overrides(os.getcwd())
-    if(sg.PopupYesNo("Do you wish to add to profile?") == "Yes"):
+    if sg.PopupYesNo("Do you wish to add to profile?") == "Yes":
         add_profile()
         sg.PopupOK('Downloading Finished & profile has been added to launcher, Have Fun!')
     else:
